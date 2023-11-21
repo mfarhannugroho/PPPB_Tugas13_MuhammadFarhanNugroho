@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".UpdateSupporterActivity"
+    android:background="#F4DFC8">
+
+    <TextView
+        android:id="@+id/updateSupporterHeading"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:text="Edit Supporter"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:fontFamily="@font/poppins_bold"/>
+
+    <ImageView
+        android:id="@+id/updateSupporterButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/baseline_done_outline_24"
+        android:layout_marginTop="2dp"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="6dp" />
+
+    <EditText
+        android:id="@+id/updateSupporterNameEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/updateSupporterHeading"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/edit_text_rounded_rectangle"
+        android:hint="Masukkan nama supporter"
+        android:maxLines="1"
+        android:padding="12dp"
+        android:paddingStart="20dp"
+        android:textSize="20sp"
+        android:fontFamily="@font/poppins_bold"/>
+
+    <EditText
+        android:id="@+id/updateSupporterClubEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/updateSupporterNameEditText"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/edit_text_rounded_rectangle"
+        android:hint="Masukkan fakultas supporter"
+        android:padding="12dp"
+        android:paddingStart="20dp"
+        android:textSize="20sp"
+        android:fontFamily="@font/poppins_bold"/>
+
+</RelativeLayout>
