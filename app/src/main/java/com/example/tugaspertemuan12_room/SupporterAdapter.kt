@@ -1,6 +1,5 @@
 package com.example.tugaspertemuan12_room
 
-import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.view.LayoutInflater
@@ -8,13 +7,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.firestore.FirebaseFirestore
 
-class SupporterAdapter(private var supporters: MutableList<SupporterNote>, private val context: Context) :
-    RecyclerView.Adapter<SupporterAdapter.SupporterViewHolder>() {
-
-    private val db: SupporterDatabaseHelper = SupporterDatabaseHelper(context)
+class SupporterAdapter(
+    private var supporters: MutableList<SupporterNote>,
+    private val context: Context,
+    private val db: FirebaseFirestore
+) : RecyclerView.Adapter<SupporterAdapter.SupporterViewHolder>() {
 
     class SupporterViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val supporterTextView: TextView = itemView.findViewById(R.id.supporterTextView)
@@ -50,19 +50,43 @@ class SupporterAdapter(private var supporters: MutableList<SupporterNote>, priva
 
         // Menambahkan listener untuk tombol delete
         holder.deleteButton.setOnClickListener {
-            // Menampilkan dialog konfirmasi sebelum menghapus supporter
-            AlertDialog.Builder(context).apply {
-                setTitle("Hapus Supporter")
-                setMessage("Apakah kamu yakin untuk menghapusnya?")
-                setPositiveButton("Ya") { _, _ ->
-                    // Menghapus supporter dari database dan daftar
-                    db.deleteSupporter(supporterNote.id)
-                    supporters.removeAt(position)
-                    notifyItemRemoved(position)
-                    Toast.makeText(context, "Supporter telah dihapus", Toast.LENGTH_SHORT).show()
+            // Menghapus data supporter dari Firestore
+            db.collection("supporters").document(supporterNote.id)
+                .delete()
+                .addOnSuccessListener {
+                    // Pengecekan sebelum menghapus item dari daftar
+                    if (position < supporters.size) {
+                        supporters.removeAt(position)
+                        notifyItemRemoved(position)
+                        showToast("Supporter telah dihapus")
+                    }
                 }
-                setNegativeButton("Tidak", null)
-            }.create().show()
+                .addOnFailureListener { e ->
+                    showToast("Gagal menghapus supporter: $e")
+                }
         }
+    }
+
+    // Mengambil data supporter dari Firestore dan memperbarui tampilan
+    fun refreshData() {
+        db.collection("supporters")
+            .get()
+            .addOnSuccessListener { result ->
+                supporters.clear()
+                for (document in result) {
+                    val supporterNote = document.toObject(SupporterNote::class.java)
+                    supporterNote.id = document.id
+                    supporters.add(supporterNote)
+                }
+                notifyDataSetChanged()
+            }
+            .addOnFailureListener { e ->
+                showToast("Gagal mengambil data supporter: $e")
+            }
+    }
+
+    // Menampilkan pesan toast
+    private fun showToast(message: String) {
+        // Implementasi showToast
     }
 }

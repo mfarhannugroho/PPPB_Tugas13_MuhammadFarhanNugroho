@@ -4,10 +4,11 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.tugaspertemuan12_room.databinding.ActivityAddSupporterBinding
+import com.google.firebase.firestore.FirebaseFirestore
 
 class AddSupporterActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddSupporterBinding
-    private lateinit var db: SupporterDatabaseHelper
+    private lateinit var db: FirebaseFirestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -16,8 +17,8 @@ class AddSupporterActivity : AppCompatActivity() {
         binding = ActivityAddSupporterBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Menginisialisasi objek SupporterDatabaseHelper untuk berinteraksi dengan database
-        db = SupporterDatabaseHelper(this)
+        // Menginisialisasi objek FirebaseFirestore untuk berinteraksi dengan Firestore
+        db = FirebaseFirestore.getInstance()
 
         // Menambahkan listener untuk tombol kembali
         binding.addSupporterBackButton.setOnClickListener {
@@ -33,22 +34,29 @@ class AddSupporterActivity : AppCompatActivity() {
             // Memastikan bahwa input tidak kosong
             if (supporter.isNotEmpty() && club.isNotEmpty()) {
                 // Membuat objek SupporterNote dari input pengguna
-                val supporterNote = SupporterNote(0, supporter, club)
+                val supporterNote = SupporterNote("", supporter, club)
 
-                // Menyimpan data supporter ke dalam database
-                val success = db.insertSupporter(supporterNote)
-                if (success) {
-                    // Jika penyimpanan berhasil, menutup activity dan menampilkan pesan sukses
-                    finish()
-                    Toast.makeText(this, "Supporter Disimpan", Toast.LENGTH_SHORT).show()
-                } else {
-                    // Jika penyimpanan gagal, menampilkan pesan kesalahan
-                    Toast.makeText(this, "Gagal menyimpan supporter", Toast.LENGTH_SHORT).show()
-                }
+                // Menyimpan data supporter ke dalam koleksi "supporters" di Firestore
+                db.collection("supporters")
+                    .add(supporterNote)
+                    .addOnSuccessListener { documentReference ->
+                        // Jika penyimpanan berhasil, menutup activity dan menampilkan pesan sukses
+                        finish()
+                        showToast("Supporter Disimpan dengan ID: ${documentReference.id}")
+                    }
+                    .addOnFailureListener { e ->
+                        // Jika penyimpanan gagal, menampilkan pesan kesalahan
+                        showToast("Gagal menyimpan supporter: $e")
+                    }
             } else {
                 // Jika ada input yang kosong, menampilkan pesan kesalahan
-                Toast.makeText(this, "Nama supporter dan fakultas harus diisi", Toast.LENGTH_SHORT).show()
+                showToast("Nama supporter dan klub harus diisi")
             }
         }
+    }
+
+    // Fungsi untuk menampilkan pesan toast
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 }

@@ -4,11 +4,12 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.tugaspertemuan12_room.databinding.ActivityUpdateSupporterBinding
+import com.google.firebase.firestore.FirebaseFirestore
 
 class UpdateSupporterActivity : AppCompatActivity() {
     private lateinit var binding: ActivityUpdateSupporterBinding
-    private lateinit var db: SupporterDatabaseHelper
-    private var supporterId: Int = -1
+    private lateinit var db: FirebaseFirestore
+    private var supporterId: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -17,43 +18,75 @@ class UpdateSupporterActivity : AppCompatActivity() {
         binding = ActivityUpdateSupporterBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Inisialisasi objek database helper
-        db = SupporterDatabaseHelper(this)
+        // Inisialisasi objek FirebaseFirestore untuk berinteraksi dengan Firestore
+        db = FirebaseFirestore.getInstance()
 
         // Mendapatkan ID supporter yang akan diperbarui dari intent
-        supporterId = intent.getIntExtra("supporter_id", -1)
+        supporterId = intent.getStringExtra("supporter_id") ?: ""
 
         // Menutup aktivitas jika ID supporter tidak valid
-        if (supporterId == -1){
+        if (supporterId.isEmpty()) {
+            showToast("ID supporter tidak valid.")
             finish()
             return
         }
 
-        // Mendapatkan data supporter berdasarkan ID dan menampilkan di UI
-        val supporterNote = db.getSupporterByID(supporterId)
-        binding.updateSupporterNameEditText.setText(supporterNote.supporterName)
-        binding.updateSupporterClubEditText.setText(supporterNote.clubName)
+        // Mengambil data supporter dari Firestore berdasarkan ID
+        db.collection("supporters").document(supporterId)
+            .get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    // Mengonversi dokumen Firestore ke objek SupporterNote
+                    val supporterNote = document.toObject(SupporterNote::class.java)
+                    supporterNote?.let {
+                        // Menampilkan data supporter di UI
+                        binding.updateSupporterNameEditText.setText(it.supporterName)
+                        binding.updateSupporterClubEditText.setText(it.clubName)
+                    }
+                } else {
+                    // Menutup aktivitas jika dokumen tidak ditemukan
+                    showToast("Dokumen tidak ditemukan, mungkin sudah dihapus.")
+                    finish()
+                }
+            }
+            .addOnFailureListener { e ->
+                // Menutup aktivitas jika terjadi kegagalan dalam mengambil data
+                showToast("Gagal mengambil data supporter: $e")
+                finish()
+            }
 
         // Mengatur aksi tombol untuk menyimpan perubahan data supporter
-        binding.updateSupporterButton.setOnClickListener{
+        binding.updateSupporterButton.setOnClickListener {
             val newTitle = binding.updateSupporterNameEditText.text.toString()
             val newContent = binding.updateSupporterClubEditText.text.toString()
 
-            // Membuat objek SupporterNote yang diperbarui
-            val updatedNote = SupporterNote(supporterId, newTitle, newContent)
+            // Memastikan ID supporter tidak kosong
+            if (supporterId.isNotEmpty()) {
+                // Membuat objek SupporterNote yang diperbarui
+                val updatedNote = SupporterNote(supporterId, newTitle, newContent)
 
-            // Memperbarui data supporter dalam database
-            val success = db.updateSupporter(updatedNote)
-
-            // Menangani hasil dari pembaruan data
-            if (success) {
-                // Menutup aktivitas jika pembaruan berhasil
-                finish()
-                Toast.makeText(this, "Supporter Diperbarui", Toast.LENGTH_SHORT).show()
+                // Memperbarui data supporter di Firestore
+                db.collection("supporters").document(supporterId)
+                    .set(updatedNote)
+                    .addOnSuccessListener {
+                        // Menutup aktivitas jika pembaruan berhasil
+                        finish()
+                        showToast("Supporter Diperbarui")
+                    }
+                    .addOnFailureListener { e ->
+                        // Menampilkan pesan gagal jika pembaruan tidak berhasil
+                        showToast("Gagal memperbarui supporter: $e")
+                    }
             } else {
-                // Menampilkan pesan gagal jika pembaruan tidak berhasil
-                Toast.makeText(this, "Gagal memperbarui supporter", Toast.LENGTH_SHORT).show()
+                // Menampilkan pesan jika ID supporter tidak valid
+                showToast("ID supporter tidak valid.")
+                finish()
             }
         }
+    }
+
+    // Menampilkan pesan toast
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 }
